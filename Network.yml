@@ -169,5 +169,10 @@ outputs:
     Value: !Ref VPC
   Export:
     Name: !Sub ${EnvironmentName} -VPC
+  VPCPublicRouteTable:
+    Description: 
+      Public Routing
+    Value: !Ref PublicRouteTable
+      Export:
+        Name: !Sub ${EnvironmentName}-PUB-RT
 
-  
