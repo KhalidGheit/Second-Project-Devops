@@ -4,4 +4,70 @@ Parameters:
   EnvironmentName:
     Type: String
 Resources:
-  
+   LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 
+      VpcId:
+        Fn::importValue:
+          !Sub "${EnvironmentName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+    LoadBalancer:
+      Type: AWS::ElasticLoadBalancing::LoadBalancer
+      Properties: 
+        SecurityGroups: !Ref LoadBalancerSecurityGroup
+        Subnets: 
+          Fn::importValue: !Sub "${EnvironmentName}-PublicSubnet1"
+          Fn::importValue: !Sub "${EnvironmentName}-PublicSubnet2"
+    UdegramSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: 
+        VpcId:
+          Fn::importValue: !Sub "${EnvironmentName}-VPC"
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+          SecurityGroupEgress:
+          - IpProtocol: tcp
+            FromPort: 0
+            ToPort: 65535
+            CidrIp: 0.0.0.0/0
+    UdegramLaunchConfiguration:
+      Type: AWS::AutoScaling::LaunchConfiguration
+      Properties: 
+        InstanceType: t3.small
+        ImageId: ami-052efd3df9dad4825
+        KeyName: ex2keyssh
+        SecurityGroups: !Ref UdegramSecurityGroup
+        UserData: !Sub |
+          !/bin/bash
+          apt-get update -y
+          apt-get install apache2 -y
+          systemctl start apache2.service
+          cd /var/www/html
+          echo "Udacity Demo Web Server Up and Running!" > index.html
+        BlockDeviceMappings:
+        - DeviceName: "/dev/sdk"
+          Ebs:
+            VolumeSize: '10'
+  UdegramAutoScaling:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+       LaunchConfigurationName: !Ref UdegramLaunchConfiguration
+       MinSize: '3'
+       MaxSize: '5'
+       TargetGroupARNs:
+       ####################
+       VPCZoneIdentifier: Fn::importValue: !Sub "${EnvironmentName}-PrivateSubnets
