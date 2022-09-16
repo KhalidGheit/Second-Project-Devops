@@ -31,11 +31,6 @@ Resources:
   LoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties: 
-      Listeners:
-        - InstancePort: 80
-          InstanceProtocol: HTTP
-          LoadBalancerPort: 80
-          Protocol: HTTP
       SecurityGroups:
       - Ref: LoadBalancerSecurityGroup
       Subnets: 
@@ -108,3 +103,26 @@ Resources:
       - Ref: WebAppTargetGroup
       VPCZoneIdentifier: 
       - Fn::ImportValue: !Sub "${EnvironmentName}-PrivateSubnets"
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: WebAppTargetGroup
+      LoadBalancerArn:
+        Ref: LoadBalancer
+      Port: '80'
+      Protocol: HTTP
+  LoadBalancerListenerRule:
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+      Properties:
+        Actions:
+        - Type: forward
+          TargetGroupArn: !Ref 'WebAppTargetGroup'
+        Conditions:
+        - Field: path-pattern
+          Values: [/]
+        ListenerArn: !Ref 'Listener'
+        Priority: 1
