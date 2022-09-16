@@ -4,70 +4,107 @@ Parameters:
   EnvironmentName:
     Type: String
 Resources:
-   LoadBalancerSecurityGroup:
+
+
+
+
+  LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: 
+      GroupDescription: Allow http to our hosts and SSH from local only
       VpcId:
-        Fn::importValue:
+        Fn::ImportValue:
           !Sub "${EnvironmentName}-VPC"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 0
           ToPort: 65535
           CidrIp: 0.0.0.0/0
-        SecurityGroupEgress:
+      SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-    LoadBalancer:
-      Type: AWS::ElasticLoadBalancing::LoadBalancer
-      Properties: 
-        SecurityGroups: !Ref LoadBalancerSecurityGroup
-        Subnets: 
-          Fn::importValue: !Sub "${EnvironmentName}-PublicSubnet1"
-          Fn::importValue: !Sub "${EnvironmentName}-PublicSubnet2"
-    UdegramSecurityGroup:
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: 
-        VpcId:
-          Fn::importValue: !Sub "${EnvironmentName}-VPC"
-        SecurityGroupIngress:
-          - IpProtocol: tcp
-            FromPort: 80
-            ToPort: 80
-            CidrIp: 0.0.0.0/0
-          SecurityGroupEgress:
-          - IpProtocol: tcp
-            FromPort: 0
-            ToPort: 65535
-            CidrIp: 0.0.0.0/0
-    UdegramLaunchConfiguration:
+
+
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties: 
+      Listeners:
+        - InstancePort: 80
+          InstanceProtocol: HTTP
+          LoadBalancerPort: 80
+          Protocol: HTTP
+      SecurityGroups:
+      - Ref: LoadBalancerSecurityGroup
+      Subnets: 
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PublicSubnet1"
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PublicSubnet2"
+
+ 
+ 
+  WebAppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 8
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: 
+        Fn::ImportValue:
+          Fn::Sub: "${EnvironmentName}-VPC"
+ 
+ 
+  UdegramSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to our hosts and SSH from local only
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+  UdegramLaunchConfiguration:
       Type: AWS::AutoScaling::LaunchConfiguration
       Properties: 
         InstanceType: t3.small
         ImageId: ami-052efd3df9dad4825
-        KeyName: ex2keyssh
-        SecurityGroups: !Ref UdegramSecurityGroup
-        UserData: !Sub |
-          !/bin/bash
-          apt-get update -y
-          apt-get install apache2 -y
-          systemctl start apache2.service
-          cd /var/www/html
-          echo "Udacity Demo Web Server Up and Running!" > index.html
+        SecurityGroups: 
+        - Ref: UdegramSecurityGroup
+        UserData:
+          Fn::Base64: 
+            !Sub |
+              !/bin/bash
+              apt-get update -y
+              apt-get install apache2 -y
+              systemctl start apache2.service
+              cd /var/www/html
+              echo "Udacity Demo Web Server Up and Running!" > index.html
         BlockDeviceMappings:
         - DeviceName: "/dev/sdk"
           Ebs:
             VolumeSize: '10'
+  
   UdegramAutoScaling:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
-       LaunchConfigurationName: !Ref UdegramLaunchConfiguration
-       MinSize: '3'
-       MaxSize: '5'
-       TargetGroupARNs:
-       ####################
-       VPCZoneIdentifier: Fn::importValue: !Sub "${EnvironmentName}-PrivateSubnets
+      LaunchConfigurationName: !Ref UdegramLaunchConfiguration
+      MinSize: '3'
+      MaxSize: '5'
+      TargetGroupARNs:
+      - Ref: WebAppTargetGroup
+      VPCZoneIdentifier: 
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PrivateSubnets"
