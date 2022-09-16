@@ -43,8 +43,7 @@ Resources:
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet1CIDR
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       MapPublicIpOnLaunch: True
@@ -54,8 +53,7 @@ Resources:
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet2CIDR
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       MapPublicIpOnLaunch: True
@@ -65,8 +63,7 @@ Resources:
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
       CidrBlock: !Ref PrivateSubnet1CIDR
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       MapPublicIpOnLaunch: True
@@ -76,8 +73,7 @@ Resources:
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: VPC
+      VpcId: !Ref VPC
       CidrBlock: !Ref PrivateSubnet2CIDR
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       MapPublicIpOnLaunch: True
@@ -111,8 +107,7 @@ Resources:
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId:  
-        Ref: VPC
+      VpcId: !Ref VPC
       Tags:
       - Key: Name
         Value: !Sub ${EnvironmentName} -PublicRouteTable
@@ -132,47 +127,53 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
-  PrivatecRouteTable:
+  PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId:  
-        Ref: VPC
+      VpcId: !Ref VPC
       Tags:
       - Key: Name
-        Value: !Sub ${EnvironmentName} -PrivateRouteTable
+        Value: !Sub ${EnvironmentName} -PrivateRouteTable1
   PrivateRoute1:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId: !Ref PrivatecRouteTable
+      RouteTableId: !Ref PrivateRouteTable1
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NAT1Gateway
+      NatGatewayId: !Ref NAT1Gateway
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Sub ${EnvironmentName}-PrivateRouteTable2
   PrivateRoute2:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId: !Ref PrivatecRouteTable
+      RouteTableId: !Ref PrivateRouteTable2
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NAT2Gateway
+      NatGatewayId: !Ref NAT2Gateway
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnet1
-      RouteTableId: !Ref PrivatecRouteTable
+      RouteTableId: !Ref PrivateRouteTable1
   PrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnet2
-      RouteTableId: !Ref PrivatecRouteTable
-outputs:
+      RouteTableId: !Ref PrivateRouteTable2
+Outputs:
   VPC:
     Description:
       This is the output of the VPC
     Value: !Ref VPC
-  Export:
-    Name: !Sub ${EnvironmentName} -VPC
+    Export:
+      Name: !Sub ${EnvironmentName}-VPC
   VPCPublicRouteTable:
     Description: 
       Public Routing
     Value: !Ref PublicRouteTable
-      Export:
-        Name: !Sub ${EnvironmentName}-PUB-RT
+    Export:
+      Name: !Sub ${EnvironmentName}-PUB-RT
 
