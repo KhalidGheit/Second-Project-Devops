@@ -1,0 +1,7 @@
+Description:
+  This is the servers structure for the second project in Udacity Cloud Devops Nanodegree
+Parameters:
+  EnvironmentName:
+    Type: String
+Resources:
+  
