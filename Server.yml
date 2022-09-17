@@ -11,7 +11,7 @@ Resources:
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow http to our hosts and SSH from local only
+      GroupDescription: Allow http only outgoing traffic
       VpcId:
         Fn::ImportValue:
           !Sub "${EnvironmentName}-VPC"
@@ -58,7 +58,7 @@ Resources:
   UdegramSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow http to our hosts and SSH from local only
+      GroupDescription: Allow http to our host
       VpcId:
         Fn::ImportValue:
           !Sub "${EnvironmentName}-VPC"
