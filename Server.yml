@@ -134,3 +134,12 @@ Resources:
           Values: [/]
         ListenerArn: !Ref 'Listener'
         Priority: 1
+
+
+Outputs:
+  LoadBalancer:
+    Description:
+      DNS name for the Load balancer
+    Value: !Join ["http://", [!GetAtt LoadBalancer.DNSName]]
+    Export:
+        Name: !Sub ${EnvironmentName}-DNSName
